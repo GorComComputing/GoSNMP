@@ -416,6 +416,7 @@ func cmd_trap_v2(words []string) string {
 	if err != nil {
 		log.Fatalf("SendTrap() err: %v", err)
 	}
+	output += "Trap sended OK: " + words[1]
 	return output
 }
 
@@ -481,10 +482,11 @@ func cmd_trap_srv(words []string) string {
 	tl.Params = g.Default
 	tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 
-	err := tl.Listen("0.0.0.0:9162")
-	if err != nil {
+	 go tl.Listen("0.0.0.0:9162")
+	/*if err != nil {
 		log.Panicf("error in listen: %s", err)
-	}
+	}*/
+	output += "Trap Server started OK"
 	return output
 }
 
