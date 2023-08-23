@@ -24,14 +24,14 @@ func cmd_get(words []string) string {
 
 	// Default is a pointer to a GoSNMP struct that contains sensible defaults
 	// eg port 161, community public, etc
-	g.Default.Target = "127.0.0.1"
+	g.Default.Target = words[1] //"127.0.0.1"
 	err := g.Default.Connect()
 	if err != nil {
 		log.Fatalf("Connect() err: %v", err)
 	}
 	defer g.Default.Conn.Close()
 
-	oids := []string{"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"}
+	oids := []string{words[2]} //"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"
 	result, err2 := g.Default.Get(oids) // Get() accepts up to g.MAX_OIDS
 	if err2 != nil {
 		log.Fatalf("Get() err: %v", err2)
@@ -100,7 +100,7 @@ func cmd_get_param(words []string) string {
 		log.Println("Query latency in seconds:", time.Since(sent).Seconds())
 	}
 
-	oids := []string{"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"}
+	oids := []string{words[3]} //"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"
 	result, err2 := params.Get(oids) // Get() accepts up to g.MAX_OIDS
 	if err2 != nil {
 		log.Fatalf("Get() err: %v", err2)
@@ -193,9 +193,10 @@ const (
 func cmd_set(words []string) string {
 	var output string
 	
+	port, _ := strconv.Atoi(words[2])
 	var Client = &g.GoSNMP{
-		Target:    "127.0.0.1",
-		Port:      161,
+		Target:    words[1], //"127.0.0.1",
+		Port:      uint16(port), //161,
 		Community: "public",
 		Version:   g.Version2c,
 		Timeout:   time.Duration(2) * time.Second,
@@ -206,10 +207,12 @@ func cmd_set(words []string) string {
 		log.Fatalf("Connect() err: %v", err)
 	}
 	defer Client.Conn.Close()
+	
+	val, _ := strconv.Atoi(words[4])
 	var mySnmpPDU = []g.SnmpPDU{{
-		Name:  "1.3.6.1.2.1.25.1.7.0", //"1.3.6.1.4.1.318.1.1.4.4.2.1.3.15",
+		Name:  words[3], //"1.3.6.1.2.1.25.1.7.0", //"1.3.6.1.4.1.318.1.1.4.4.2.1.3.15",
 		Type:  g.Integer,
-		Value: Off,
+		Value: val, //Off,
 	}}
 	setResult, setErr := Client.Set(mySnmpPDU)
 	if setErr != nil {
@@ -245,14 +248,14 @@ func cmd_get_hex(words []string) string {
 
 	// Default is a pointer to a GoSNMP struct that contains sensible defaults
 	// eg port 161, community public, etc
-	g.Default.Target = "127.0.0.1"
+	g.Default.Target = words[1] //"127.0.0.1"
 	err := g.Default.Connect()
 	if err != nil {
 		log.Fatalf("Connect() err: %v", err)
 	}
 	defer g.Default.Conn.Close()
 
-	oids := []string{"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"}
+	oids := []string{words[2]} //"1.3.6.1.2.1.1.4.0", "1.3.6.1.2.1.1.7.0"
 	result, err2 := g.Default.Get(oids) // Get() accepts up to g.MAX_OIDS
 	if err2 != nil {
 		log.Fatalf("Get() err: %v", err2)
@@ -388,11 +391,13 @@ func cmd_trap_v1(words []string) string {
 
 func cmd_trap_v2(words []string) string {
 	var output string
-
+	//port, _ := strconv.Atoi(words[2])
+	fmt.Println(words)
+	
 	// Default is a pointer to a GoSNMP struct that contains sensible defaults
 	// eg port 161, community public, etc
-	g.Default.Target = "127.0.0.1"
-	g.Default.Port = 9162
+	g.Default.Target = words[1] //"127.0.0.1" // 
+	g.Default.Port = 9162 //uint16(port) //
 	g.Default.Version = g.Version2c
 	g.Default.Community = "public"
 	g.Default.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
@@ -403,9 +408,9 @@ func cmd_trap_v2(words []string) string {
 	defer g.Default.Conn.Close()
 
 	pdu := g.SnmpPDU{
-		Name:  ".1.3.6.1.6.3.1.1.4.1.0",
+		Name:  ".1.3.6.1.6.3.1.1.4.1.0", // words[3], //
 		Type:  g.OctetString,//g.ObjectIdentifier,
-		Value: words[1],
+		Value: words[4],
 	}
 
 	trap := g.SnmpTrap{
@@ -416,7 +421,7 @@ func cmd_trap_v2(words []string) string {
 	if err != nil {
 		log.Fatalf("SendTrap() err: %v", err)
 	}
-	output += "Trap sended OK: " + words[1]
+	output += "Trap sended OK: " + words[3] + ": " + words[4]
 	return output
 }
 
@@ -486,7 +491,7 @@ func cmd_trap_srv(words []string) string {
 	/*if err != nil {
 		log.Panicf("error in listen: %s", err)
 	}*/
-	output += "Trap Server started OK"
+	output += "Trap Server started OK\n"
 	return output
 }
 
@@ -501,9 +506,10 @@ func myTrapHandler(packet *g.SnmpPacket, addr *net.UDPAddr) {
 			var words = make([]string, 0)
 			words = append(words, string(b))
 			curl(words)
+			fmt.Println("Trap registered: ", words)
 
 		default:
-			log.Printf("trap: %+v\n", v)
+			fmt.Println("trap: %+v\n", v)
 		}
 	}
 }

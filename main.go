@@ -61,6 +61,9 @@ func main() {
 		fileServer: http.FileServer(http.Dir("www")),
 	})
 	
+	// Запуск SNMP-сервера
+	fmt.Print(cmd_trap_srv(nil))
+	
 	// start shell
 	for {  // exit_status
 		fmt.Print("snmp> ")
